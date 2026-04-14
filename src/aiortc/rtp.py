@@ -47,6 +47,7 @@ class HeaderExtensions:
     rtp_stream_id: Any = None
     transmission_offset: Optional[int] = None
     transport_sequence_number: Optional[int] = None
+    video_orientation: Optional[int] = None  # CVO: rotation in degrees (0/90/180/270)
 
 
 class HeaderExtensionsMap:
@@ -74,6 +75,8 @@ class HeaderExtensionsMap:
                 == "http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01"
             ):
                 self.__ids.transport_sequence_number = ext.id
+            elif ext.uri == "urn:3gpp:video-orientation":
+                self.__ids.video_orientation = ext.id
 
     def get(self, extension_profile: int, extension_value: bytes) -> HeaderExtensions:
         values = HeaderExtensions()
@@ -95,6 +98,13 @@ class HeaderExtensionsMap:
                 values.audio_level = (vad_level & 0x80 == 0x80, vad_level & 0x7F)
             elif x_id == self.__ids.transport_sequence_number:
                 values.transport_sequence_number = unpack("!H", x_value)[0]
+            elif x_id == self.__ids.video_orientation:
+                # CVO (RFC 7742 / 3GPP TS 26.114): 1-byte payload
+                # bits [1:0] = R0/R1: rotation index (0=0°, 1=90°, 2=180°, 3=270° CW)
+                # bit  [2]   = F: front-facing/flip flag
+                byte = unpack("!B", x_value)[0]
+                rotation_index = byte & 0x03
+                values.video_orientation = rotation_index * 90
         return values
 
     def set(self, values: HeaderExtensions) -> tuple[int, bytes]:

@@ -7,9 +7,10 @@ MAX_MISORDER = 100
 
 
 class JitterFrame:
-    def __init__(self, data: bytes, timestamp: int) -> None:
+    def __init__(self, data: bytes, timestamp: int, video_orientation: Optional[int] = None) -> None:
         self.data = data
         self.timestamp = timestamp
+        self.video_orientation = video_orientation  # CVO rotation in degrees (0/90/180/270), or None
 
 
 class JitterBuffer:
@@ -80,6 +81,7 @@ class JitterBuffer:
                     frame = JitterFrame(
                         data=b"".join([x._data for x in packets]),  # type: ignore
                         timestamp=timestamp,
+                        video_orientation=packets[0].extensions.video_orientation,
                     )
                     remove = count
 
