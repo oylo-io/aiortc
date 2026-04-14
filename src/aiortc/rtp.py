@@ -1,9 +1,12 @@
+import logging
 import math
 import os
 import struct
 from dataclasses import dataclass, field
 from struct import pack, unpack, unpack_from
 from typing import Any, Optional, Union
+
+_rtp_logger = logging.getLogger(__name__)
 
 from av import AudioFrame
 
@@ -80,9 +83,20 @@ class HeaderExtensionsMap:
 
     def get(self, extension_profile: int, extension_value: bytes) -> HeaderExtensions:
         values = HeaderExtensions()
-        for x_id, x_value in unpack_header_extensions(
-            extension_profile, extension_value
-        ):
+        parsed = list(unpack_header_extensions(extension_profile, extension_value))
+        # CVO diagnostic: log all extension ids on first call and when ids change
+        if not hasattr(self, '_logged_ext_ids'):
+            self._logged_ext_ids = None
+        ext_ids = tuple(x_id for x_id, _ in parsed)
+        if ext_ids != self._logged_ext_ids:
+            ext_detail = {x_id: x_value.hex() for x_id, x_value in parsed}
+            _rtp_logger.info(
+                f"[CVO_DEBUG] RTP extensions seen: ids={ext_ids}, "
+                f"configured_cvo_id={self.__ids.video_orientation}, "
+                f"detail={ext_detail}"
+            )
+            self._logged_ext_ids = ext_ids
+        for x_id, x_value in parsed:
             if x_id == self.__ids.mid:
                 values.mid = x_value.decode("utf8")
             elif x_id == self.__ids.repaired_rtp_stream_id:
