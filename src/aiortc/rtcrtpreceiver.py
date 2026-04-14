@@ -71,7 +71,9 @@ def decoder_worker(
         for frame in decoder.decode(encoded_frame):
             # Attach CVO rotation (degrees: 0/90/180/270) from the RTP header
             # extension so server code can read it via frame.cvo_rotation.
-            frame.cvo_rotation = encoded_frame.video_orientation if encoded_frame.video_orientation is not None else 0
+            # Only video frames support this attribute (AudioFrame does not).
+            if hasattr(encoded_frame, 'video_orientation'):
+                frame.cvo_rotation = encoded_frame.video_orientation if encoded_frame.video_orientation is not None else 0
             # pass the decoded frame to the track
             asyncio.run_coroutine_threadsafe(output_q.put(frame), loop)
 
