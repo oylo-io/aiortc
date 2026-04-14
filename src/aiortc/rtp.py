@@ -58,6 +58,8 @@ class HeaderExtensionsMap:
         self.__ids = HeaderExtensions()
 
     def configure(self, parameters: RTCRtpParameters) -> None:
+        ext_uris = [ext.uri for ext in parameters.headerExtensions]
+        _rtp_logger.info(f"[CVO_CONFIG] configuring HeaderExtensionsMap with {len(parameters.headerExtensions)} extensions: {ext_uris}")
         for ext in parameters.headerExtensions:
             if ext.uri == "urn:ietf:params:rtp-hdrext:sdes:mid":
                 self.__ids.mid = ext.id
@@ -80,6 +82,7 @@ class HeaderExtensionsMap:
                 self.__ids.transport_sequence_number = ext.id
             elif ext.uri == "urn:3gpp:video-orientation":
                 self.__ids.video_orientation = ext.id
+        _rtp_logger.info(f"[CVO_CONFIG] result: video_orientation_id={self.__ids.video_orientation}")
 
     def get(self, extension_profile: int, extension_value: bytes) -> HeaderExtensions:
         values = HeaderExtensions()
