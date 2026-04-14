@@ -101,7 +101,7 @@ class HeaderExtensionsMap:
             elif x_id == self.__ids.video_orientation:
                 # CVO (RFC 7742 / 3GPP TS 26.114): 1-byte payload
                 # bits [1:0] = R0/R1: rotation index (0=0°, 1=90°, 2=180°, 3=270° CW)
-                # bit  [2]   = F: front-facing/flip flag
+                # bit  [2]   = F: horizontal flip (not exposed; Chrome does not set it)
                 byte = unpack("!B", x_value)[0]
                 rotation_index = byte & 0x03
                 values.video_orientation = rotation_index * 90
