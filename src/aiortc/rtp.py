@@ -84,18 +84,21 @@ class HeaderExtensionsMap:
     def get(self, extension_profile: int, extension_value: bytes) -> HeaderExtensions:
         values = HeaderExtensions()
         parsed = list(unpack_header_extensions(extension_profile, extension_value))
-        # CVO diagnostic: log all extension ids on first call and when ids change
-        if not hasattr(self, '_logged_ext_ids'):
-            self._logged_ext_ids = None
-        ext_ids = tuple(x_id for x_id, _ in parsed)
-        if ext_ids != self._logged_ext_ids:
-            ext_detail = {x_id: x_value.hex() for x_id, x_value in parsed}
-            _rtp_logger.info(
-                f"[CVO_DEBUG] RTP extensions seen: ids={ext_ids}, "
-                f"configured_cvo_id={self.__ids.video_orientation}, "
-                f"detail={ext_detail}"
+        # CVO diagnostic: log once per map instance when CVO is configured,
+        # and again whenever the raw CVO byte value changes
+        if self.__ids.video_orientation is not None:
+            cvo_raw = next(
+                (x_value for x_id, x_value in parsed if x_id == self.__ids.video_orientation),
+                None,
             )
-            self._logged_ext_ids = ext_ids
+            if not hasattr(self, '_last_cvo_raw') or cvo_raw != self._last_cvo_raw:
+                all_ids = {x_id: x_value.hex() for x_id, x_value in parsed}
+                _rtp_logger.info(
+                    f"[CVO_DEBUG] cvo_id={self.__ids.video_orientation}, "
+                    f"cvo_raw={cvo_raw.hex() if cvo_raw else None}, "
+                    f"all_ext_ids={all_ids}"
+                )
+                self._last_cvo_raw = cvo_raw
         for x_id, x_value in parsed:
             if x_id == self.__ids.mid:
                 values.mid = x_value.decode("utf8")
